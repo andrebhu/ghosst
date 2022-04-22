@@ -6,20 +6,25 @@ import json
 import requests
 
 from time import sleep
+from itertools import cycle
 from dotenv import load_dotenv
 
 load_dotenv()
 
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
-FEATURES = ['login', 'id', 'url']
+GITHUB_TOKEN2 = os.getenv('GITHUB_TOKEN2')
+GITHUB_TOKEN3 = os.getenv('GITHUB_TOKEN3')
+
+tokens = [GITHUB_TOKEN, GITHUB_TOKEN2, GITHUB_TOKEN3]
+token_cycle = cycle(tokens)
+SLEEP_RATE = 0.8 / len(tokens) # 0.72 3600 seconds / 5000 requests, 0.8 for safe measure
+FEATURES = ['login', 'id']
+
 URL = 'https://api.github.com/organizations?per_page=100&since='
-HEADERS = {
-    'Authorization': f'token {GITHUB_TOKEN}'
-}
+
 
 
 def main():
-    
     # appending to existing file
     if os.path.exists('organizations.csv'):
         # retrieve last line id to continue adding orgs
@@ -45,18 +50,23 @@ def main():
 
             while True:
                 url = URL + str(since)
-                r = requests.get(url, headers=HEADERS)
+
+                headers = {
+                    'Authorization': f'token {next(token_cycle)}'
+                }
+
+                r = requests.get(url, headers=headers)
                 data = r.json()
 
+                # print(data[0]['login'], data[0]['id'])
                 for org in data:
                     writer.writerow({
                         'login': org['login'],
                         'id': org['id'],
-                        'url': org['url'],
                     })
                 
                 since = data[-1]['id']
-                sleep(0.8)
+                sleep(SLEEP_RATE)
 
     # creating a new file
     else:    
@@ -66,20 +76,30 @@ def main():
 
             since = 0
             while True:        
-                url = URL + str(since)                
-                r = requests.get(url, headers=HEADERS)
-                
+                url = URL + str(since)      
+
+                headers = {
+                    'Authorization': f'token {next(token_cycle)}'
+                }
+
+                r = requests.get(url, headers=headers)
                 data = r.json()
+
+                # print(data[0]['login'], data[0]['id'])
                 for org in data:
                     writer.writerow({
                         'login': org['login'],
                         'id': org['id'],
-                        'url': org['url'],
                     })            
                 
                 since = data[-1]['id']
-                sleep(0.8)
+                sleep(SLEEP_RATE)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        exit()
+    except Exception as e:
+        print(e)
