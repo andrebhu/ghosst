@@ -17,7 +17,7 @@ secrets = dotenv_values()
 tokens = list(secrets.values())
 
 token_cycle = cycle(tokens)
-SLEEP_RATE = 0.8 / len(tokens) # 0.72 3600 seconds / 5000 requests, 0.8 for safe measure
+SLEEP_RATE = 0.8 / len(tokens)
 
 FEATURES = [
     "login",
@@ -112,7 +112,7 @@ def main():
                             "type": data['type'],
                         })
 
-                    sleep(SLEEP_RATE)
+                    # sleep(SLEEP_RATE)
 
         else:
             with open("verified_organizations.csv", "w") as outfile:
@@ -142,7 +142,7 @@ def main():
                             "updated_at": data['updated_at'],
                             "type": data['type'],
                         })
-                    sleep(SLEEP_RATE)
+                    # sleep(SLEEP_RATE)
 
 
 
@@ -153,3 +153,5 @@ if __name__ == "__main__":
         exit()
     except Exception as e:
         print(e)
+        sleep(120)
+        main()
