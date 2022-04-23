@@ -38,7 +38,6 @@ FEATURES = [
     "type",
 ]
 
-
 def checkOrg(orgname):    
     # If not found on normal GitHub, save an API call and return
     r = requests.get(f"https://github.com/{orgname}")
@@ -51,12 +50,12 @@ def checkOrg(orgname):
     data = requests.get(f"https://api.github.com/orgs/{orgname}", headers=headers).json()
 
     if data['is_verified']:
-        print(f"[{datetime.now()}] {data['login']} {data['id']}")
+        print(f"[{datetime.now()}] {data['login']} {data['id']}", "{:.5f}%".format(data['id'] / 104219624 * 100))
         return data
 
 
 def main():
-    
+
     with open("organizations-4-22-2022.csv", "r") as infile:
         reader = csv.reader(infile)
         # skip headers 
