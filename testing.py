@@ -19,50 +19,7 @@ tokens = list(secrets.values())
 token_cycle = cycle(tokens)
 
 
-
-def worker(reader, writer):
-
-    while True:
-        urlname = next(reader)[0]
-
-        # initial request to check if org actually exists
-        with requests.get(f"https://github.com/{urlname}") as r:
-            if r.status_code == 404: continue
-        
-        headers = {
-            "Authorization": f"token {next(token_cycle)}"
-        }
-
-        data = requests.get(f"https://api.github.com/orgs/{urlname}", headers=headers).json()
-
-        if data['is_verified']:
-            print(f"[{datetime.now()}] {data['login']} {data['id']}", "{:.5f}%".format(data['id'] / 104219624 * 100))
-            writer.writerow({
-                "login": data['login'],
-                "id": data['id'],
-                "name": data['name'],
-                "company": data['company'],
-                "blog": data['blog'],
-                "email": data['email'],
-                "twitter_username": data['twitter_username'],
-                "is_verified": data['is_verified'],
-                "has_organization_projects": data['has_organization_projects'],
-                "has_repository_projects": data['has_repository_projects'],
-                "public_repos": data['public_repos'],
-                "public_gists": data['public_gists'],
-                "html_url": data['html_url'],
-                "created_at": data['created_at'],
-                "updated_at": data['updated_at'],
-                "type": data['type'],
-            })
-
-
-
-
-def main():
-
-    
-    FEATURES = [
+FEATURES = [
     "login",
     "id",
     "name",
@@ -80,6 +37,58 @@ def main():
     "updated_at",
     "type",
 ]
+
+
+def worker(reader, writer, outfile):
+
+    while True:
+        urlname = next(reader)[0]
+
+        # initial request to check if org actually exists
+        with requests.get(f"https://github.com/{urlname}") as r:
+            if r.status_code == 404: continue
+        
+        headers = {
+            "Authorization": f"token {next(token_cycle)}"
+        }
+
+
+        data = requests.get(f"https://api.github.com/orgs/{urlname}", headers=headers).json()
+
+        if not data['is_verified']: continue
+    
+        writer.writerow({
+            "login": data['login'],
+            "id": data['id'],
+            "name": data['name'],
+            "company": data['company'],
+            "blog": data['blog'],
+            "email": data['email'],
+            "twitter_username": data['twitter_username'],
+            "is_verified": data['is_verified'],
+            "has_organization_projects": data['has_organization_projects'],
+            "has_repository_projects": data['has_repository_projects'],
+            "public_repos": data['public_repos'],
+            "public_gists": data['public_gists'],
+            "html_url": data['html_url'],
+            "created_at": data['created_at'],
+            "updated_at": data['updated_at'],
+            "type": data['type'],
+        })
+
+        print(f"[{datetime.now()}] {data['login']} {data['id']}", "{:.5f}%".format(data['id'] / 104219624 * 100))
+
+        # outfile.sync()
+        outfile.flush() # save file
+        
+        
+
+        
+
+
+
+
+def main():
 
     # create reader
     infile = open("organizations-4-22-2022.csv", "r")
@@ -105,21 +114,19 @@ def main():
         row = next(reader)
     
     # Creating writer
-    outfile = open("verified_organizations", "a")
+    outfile = open("verified_organizations.csv", "a")
     writer = csv.DictWriter(outfile, fieldnames=FEATURES)
 
     print(f"[{datetime.now()}] Last entry {row}")
 
-
     # creating workers
     p = Pool(5)
     for i in range(5):
-        p.apply_async(worker, (reader, writer,))
+        p.apply_async(worker, (reader, writer, outfile))
 
     p.close()
     p.join()
-
-
+    print("Finishing...")
 
 
 
