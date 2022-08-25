@@ -1,4 +1,4 @@
-# gh-org-scraper
+# GitHub Open-Source Scanning Tool
 
 A side project to analyze org repos for bug bounties.
 
